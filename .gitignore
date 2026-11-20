@@ -9,7 +9,7 @@ dist/
 *.egg-info/
 
 # Runtime storage & database
-data/
+/data/
 *.db
 *.sqlite
 *.sqlite3
@@ -22,6 +22,14 @@ models/
 *.pt
 *.pth
 checkpoint-*/
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
 
 # Test cache
 .pytest_cache/
