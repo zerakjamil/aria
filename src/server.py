@@ -36,6 +36,7 @@ from src.guardrails import (
     BASE_PERSONALITY_PROMPT,
     TECHNICAL_COPILOT_PROMPT,
     select_personality_prompt,
+    parse_persona,
     inspect_crisis_intervention,
     is_within_quiet_hours,
     sanitize_response_length,
@@ -169,7 +170,24 @@ async def chat_endpoint(req: ChatRequest):
     history_rows = await get_active_messages(conversation_id, limit=20)
     dialogue_history = [{"role": r["role"], "content": r["content"]} for r in history_rows if r["role"] in ("user", "assistant")]
 
-    personality_prompt, is_technical = select_personality_prompt(user_text)
+    active_persona = None
+    for r in profile_rows:
+        if r["key"] == "custom_persona":
+            try:
+                active_persona = json.loads(r["value"])
+            except Exception:
+                pass
+
+    detected_persona = parse_persona(user_text)
+    if detected_persona:
+        if detected_persona.get("reset"):
+            active_persona = None
+            await upsert_user_profile("custom_persona", "persona", json.dumps({"name": "Aria", "gender": "female"}), 1.0)
+        else:
+            active_persona = detected_persona
+            await upsert_user_profile("custom_persona", "persona", json.dumps(detected_persona), 1.0)
+
+    personality_prompt, is_technical = select_personality_prompt(user_text, active_persona=active_persona)
 
     compiled_messages, active_tokens, compaction_needed = compile_budgeted_prompt(
         personality_prompt,

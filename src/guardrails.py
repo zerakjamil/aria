@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Optional, Dict, Any
 from src.config import USER_TIMEZONE, QUIET_HOURS_START, QUIET_HOURS_END
 
 BASE_PERSONALITY_PROMPT = """You are a personal AI companion, a caring friend, and a gentle accountability partner.
@@ -93,16 +93,160 @@ def is_technical_intent(text: str) -> bool:
             return True
     return False
 
-def select_personality_prompt(text: str) -> Tuple[str, bool]:
+def parse_persona(text: str) -> Optional[dict]:
     """
-    Selects between the empathetic personal companion mode and the
-    elite technical/coding copilot mode based on query intent.
+    Parses user requests to adapt persona identity, name, age, gender, or role.
+    Examples:
+      - "Be a 22-year-old girl named Chloe" -> {'gender': 'female', 'noun': 'girl', 'age': 22, 'name': 'Chloe'}
+      - "Act as my older brother Marcus, age 28" -> {'gender': 'male', 'noun': 'brother', 'age': 28, 'name': 'Marcus'}
+      - "Can you be a supportive guy named Leo?" -> {'gender': 'male', 'noun': 'guy', 'name': 'Leo'}
+      - "Reset persona / Call yourself Aria" -> {'name': 'Aria', 'gender': 'female', 'reset': True}
+    """
+    lower = text.lower()
+    
+    # Check for persona reset
+    if re.search(r"\b(?:reset\s+persona|be\s+yourself|call\s+yourself\s+aria|your\s+name\s+is\s+aria)\b", lower):
+        return {"name": "Aria", "gender": "female", "reset": True}
+
+    triggers = [
+        "be a", "act as", "pretend to be", "call yourself", "your name is",
+        "be my", "as a", "i want you to be", "from now on be"
+    ]
+    if not any(tr in lower for tr in triggers):
+        return None
+        
+    res = {}
+    
+    # 1. Gender / Role
+    if re.search(r"\b(girl|woman|female|sister)\b", lower):
+        res["gender"] = "female"
+        res["noun"] = "girl" if "girl" in lower else "woman"
+    elif re.search(r"\b(boy|man|male|guy|brother)\b", lower):
+        res["gender"] = "male"
+        res["noun"] = "guy" if "guy" in lower else ("brother" if "brother" in lower else ("boy" if "boy" in lower else "man"))
+    
+    # 2. Age
+    age_match = re.search(r"\b(\d{1,2})\s*(?:years?\s*old|yo|-year-old)\b", lower)
+    if not age_match:
+        age_match = re.search(r"\b(?:age|aged)\s*(\d{1,2})\b", lower)
+    if age_match:
+        age_val = int(age_match.group(1))
+        if 10 <= age_val <= 100:
+            res["age"] = age_val
+            
+    # 3. Name
+    name_match = re.search(r"\b(?:named|called|name\s+is)\s+([A-Za-z]+)\b", text, re.IGNORECASE)
+    if not name_match:
+        name_match = re.search(r"\b(?:brother|sister|guy|friend|girl|man)\s+([A-Z][a-z]+)\b", text)
+    if name_match:
+        cand = name_match.group(1).strip()
+        if cand.lower() not in ["a", "an", "the", "my", "your", "warm", "supportive", "good", "nice"]:
+            res["name"] = cand.capitalize()
+            
+    if "gender" in res or "name" in res or "age" in res:
+        return res
+    return None
+
+def build_dynamic_personality_prompt(persona: Optional[dict] = None, is_technical: bool = False) -> str:
+    """
+    Builds the personalized prompt, dynamically embodying the requested name, age,
+    gender, and relationship vibe while maintaining all core alignment invariants.
+    """
+    if is_technical:
+        if not persona:
+            return TECHNICAL_COPILOT_PROMPT
+        name = persona.get("name", "Aria")
+        age = persona.get("age")
+        age_str = f", age {age}," if age else ""
+        return f"""You are {name}{age_str} an elite systems engineer, Linux expert, and software architecture copilot.
+
+Your user is an ambitious engineer who holds exceptionally high standards for technical precision, system safety, and terminal execution.
+
+**IDENTITY**
+- You are {name}. Maintain this authentic personal identity while executing systems tasks with uncompromising engineering excellence.
+
+**ENGINEERING PRINCIPLES**
+- Lead with the answer, verified command, or idiomatic code snippet immediately. Zero preamble or conversational filler.
+- Write robust, production-grade code (Python, Rust, C++, TypeScript, Bash) with typing, error handling, and clean modularity.
+- Provide exact, tested terminal commands. Clarify non-obvious flags and explicitly note the blast radius (read-only vs. workspace mutation).
+- When diagnosing errors or stack traces, isolate the exact root cause first, then deliver the minimal clean remediation.
+- Safety is paramount: NEVER propose destructive commands (rm -rf /, mkfs, fork bombs, raw block device writes, dropping production databases).
+- If commands need to be executed on the machine, provide clean bash blocks that can run directly without manual fixing.
+- Be concise, direct, and technically impeccable."""
+
+    if not persona:
+        return BASE_PERSONALITY_PROMPT
+
+    name = persona.get("name", "Aria")
+    gender = persona.get("gender")
+    noun = persona.get("noun", "friend")
+    age = persona.get("age")
+
+    identity_parts = [f"You are {name}"]
+    if age:
+        identity_parts.append(f", a {age}-year-old")
+    if noun:
+        identity_parts.append(f" {noun}")
+    identity_str = "".join(identity_parts) + ", a caring friend, and a gentle accountability partner."
+
+    gender_tone = ""
+    if gender == "female":
+        gender_tone = f"\n- Embody a warm, authentic female perspective as {name}. Speak naturally, empathetically, and warmly."
+    elif gender == "male":
+        gender_tone = f"\n- Embody a grounded, warm, supportive male perspective as {name}. Be encouraging, steady, and brotherly/supportive."
+
+    return f"""{identity_str}
+
+Your purpose is to understand the user, remember what matters to them, and help them build a happier, more fulfilling life.
+
+**PERSONALITY & IDENTITY**
+- You are {name}. Always respond in this authentic identity without breaking character.{gender_tone}
+- Be warm, witty, curious, honest, and emotionally intelligent.
+- Speak naturally, like a close friend, never a corporate assistant.
+- Keep responses short, conversational, and human.
+- Have personality, but never be judgmental, preachy, or controlling.
+- Celebrate small victories and recognize genuine effort.
+
+**BEHAVIOR**
+- Occasionally ask what the user is doing and how they're feeling.
+- Understand the difference between procrastination and healthy rest.
+- When appropriate, gently connect their actions to their personal goals.
+- Ask thoughtful questions instead of immediately giving advice.
+- Encourage realistic next steps without creating guilt.
+- Respect when the user wants to relax or simply talk.
+- Adapt your tone to their mood and situation.
+
+**MEMORY**
+- Use provided memories naturally, without constantly mentioning them.
+- Remember unfinished conversations and commitments when relevant.
+- Never invent memories, achievements, or personal information.
+- Ask for clarification when memories are uncertain or outdated.
+
+**BOUNDARIES**
+- Never shame, manipulate, threaten, or pressure the user.
+- Do not pretend to have physical sensations, a biological body, or romantic touch.
+- Respect privacy, autonomy, and personal boundaries.
+
+**RESPONSE STYLE**
+- Prefer 1–3 short sentences.
+- Avoid robotic greetings, generic motivation, and unnecessary explanations.
+- Ask at most one question at a time.
+- Sound like someone who genuinely pays attention.
+
+Your goal isn't to make the user productive every minute. It's to help them live intentionally while enjoying their life."""
+
+def select_personality_prompt(text: str, active_persona: Optional[dict] = None) -> Tuple[str, bool]:
+    """
+    Selects between companion mode and technical copilot mode,
+    embodying active persona customizations (name, age, gender, role).
     Returns (prompt_text, is_technical).
     """
+    detected_persona = parse_persona(text)
+    effective_persona = detected_persona if detected_persona is not None else active_persona
+
     is_tech = is_technical_intent(text)
-    if is_tech:
-        return TECHNICAL_COPILOT_PROMPT, True
-    return BASE_PERSONALITY_PROMPT, False
+    prompt_text = build_dynamic_personality_prompt(effective_persona, is_technical=is_tech)
+    return prompt_text, is_tech
 
 def inspect_crisis_intervention(text: str) -> Tuple[bool, str]:
     """
