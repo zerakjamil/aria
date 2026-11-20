@@ -11,7 +11,7 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\lhead{\footnotesize \textbf{Aria: Sovereign Edge AI Personal Companion $\cdot$ Research Paper}}
+\lhead{\footnotesize \textbf{Aria: Sovereign Edge AI Personal Companion \& Terminal Agent $\cdot$ Research Paper}}
 \rhead{\footnotesize Applied AI Systems $\cdot$ Department of Computer Science $\cdot$ 2026}
 \cfoot{\thepage}
 
@@ -38,7 +38,7 @@
 \begin{document}
 
 \begin{center}
-{\Large \textbf{Sovereign Edge AI Personal Companions: Empirical Architecture, Zero-Copy Quantized Adapter Fusion, and Dual-Layer Anti-Degeneration Harnesses on Constrained Hardware}}\\[3pt]
+{\Large \textbf{Sovereign Edge AI Personal Companions: Empirical Architecture, Zero-Copy Quantized Adapter Fusion, and Sandboxed Dual-Mode Terminal Agency}}\\[3pt]
 {\normalsize \textbf{Zerak Jamil}}\\[2pt]
 {\small Department of Computer Science $\cdot$ Applied AI Systems \& Edge Computing Group}\\[2pt]
 {\footnotesize Project Codebase \& Verified Artifacts: \url{https://github.com/zerakjamil/aria}}
@@ -47,7 +47,7 @@
 \hrule height 1pt
 \vspace{4pt}
 
-\textbf{Abstract}---Deploying empathetic, conversational personal companions on resource-constrained consumer edge hardware requires overcoming three compounding engineering barriers: severe GPU video memory boundaries, disk-space exhaustion during weight serialization, and autoregressive generation decay manifested as conversational rambling and repetitive interrogation. This paper presents \textbf{Aria}, a fully sovereign personal AI companion engineered for local execution on an NVIDIA GeForce GTX 1650 Mobile GPU (4,096 MiB VRAM). We implement parameter-efficient low-rank adaptation (\textbf{LoRA}) on \texttt{Qwen2.5-3B-Instruct}, coupled with an automated Anthropic-style self-improving distillation graph. Operating via local OpenCode orchestration without subscription overhead, teacher models (\texttt{DeepSeek-V4.1-Flash} and \texttt{Hy4-Flash}) synthesize, critique, and distill high-entropy emotional and psychological interaction vectors into curated training trajectories. Across two iterative fine-tuning phases (expanding from 70 to 91 curated samples), empirical cross-entropy training loss converged from an initial 4.7275 baseline down to \textbf{3.8288} ($3.076 \times 10^{15}$ FLOPs), with mean token accuracy reaching 43.98\%. To deploy under a strict 9.3 GB disk boundary where conventional FP16 unquantized merges exceed storage capacity, we build an in-memory zero-copy GGUF tensor fusion pipeline via a custom-compiled \texttt{llama-export-lora} binary, executing direct on-the-fly dequantization and weight accumulation in 6.2 seconds. Finally, we formulate a dual-layer inference harness integrating Min-P dynamic probability truncation ($\text{min\_p} = 0.05$) with a real-time streaming sentence governor and a deterministic crisis quarantine state machine. In automated adversarial stress testing across 8 distinct judge evaluation vectors, Aria achieved a 100\% pass rate, generating responses at 28.6--40.1 tokens/second within a bounded 1.4 GB VRAM operating envelope.
+\textbf{Abstract}---Deploying empathetic, conversational personal companions on resource-constrained consumer edge hardware requires overcoming three compounding engineering barriers: severe GPU video memory boundaries, disk-space exhaustion during weight serialization, and autoregressive generation decay. Furthermore, power users and software engineers demand dual-mode agency: the ability to seamlessly switch between conversational emotional empathy and zero-defect coding and terminal command execution without catastrophic system failure. This paper presents \textbf{Aria}, a fully sovereign personal AI companion and sandboxed terminal agent engineered for local execution on an NVIDIA GeForce GTX 1650 Mobile GPU (4,096 MiB VRAM). We implement parameter-efficient low-rank adaptation (\textbf{LoRA}) on \texttt{Qwen2.5-3B-Instruct}, coupled with an automated Anthropic-style self-improving distillation graph. Operating via local OpenCode orchestration without subscription overhead, teacher models (\texttt{DeepSeek-V4.1-Flash} and \texttt{Hy4-Flash}) synthesize, critique, and distill high-entropy interaction vectors into curated training trajectories. Across two iterative fine-tuning phases (expanding from 70 to 91 curated samples), empirical cross-entropy training loss converged from an initial 4.7275 baseline down to \textbf{3.8288} ($3.076 \times 10^{15}$ FLOPs), with mean token accuracy reaching 43.98\%. To deploy under a strict 9.3 GB disk boundary where conventional FP16 unquantized merges exceed storage capacity, we build an in-memory zero-copy GGUF tensor fusion pipeline via a custom-compiled \texttt{llama-export-lora} binary, executing direct on-the-fly dequantization and weight accumulation in 6.2 seconds. Finally, we formulate a dual-layer inference harness integrating Min-P dynamic probability truncation ($\text{min\_p} = 0.05$) with a sandboxed 4-tier terminal execution engine featuring deterministic blast-radius gating, environment sanitization, and self-healing diagnostic feedback. Across an adversarial test suite of 19 unit/integration tests and 8 distinct judge evaluation vectors, Aria achieved a 100\% pass rate, executing terminal commands in 0.02--3.0 ms and serving empathetic tokens at 28.6--40.1 tokens/second within a bounded 1.4 GB VRAM operating envelope.
 
 \vspace{3pt}
 \hrule
@@ -62,9 +62,10 @@ Local execution on consumer-tier edge hardware, however, confronts three formida
     \item \textbf{VRAM Ceilings (\textit{Video Random Access Memory}):} Standard consumer laptops and mobile workstations frequently feature 4 GB of VRAM, precluding native FP16 execution of modern 7B or 14B parameter models.
     \item \textbf{Autoregressive Degeneration (\textit{Linguistic Collapse}):} Small parameter models ($\le 3\text{B}$) exhibit heightened susceptibility to repetitive questioning loops, sycophantic lecturing, and conversational fatigue.
     \item \textbf{Serialization Bottlenecks (\textit{Disk Partition Saturation}):} Conventional fine-tuning pipelines require double-buffering unquantized weights during adapter merging, frequently exhausting edge partition volumes.
+    \item \textbf{Terminal Execution Hazards (\textit{Operational Fragility}):} When compact models are granted system execution capabilities, hallucinated syntax or destructive commands (\texttt{rm -rf}, disk formatting) risk catastrophic host operating system damage.
 \end{enumerate}
 
-To address these constraints, we designed, fine-tuned, and deployed \textbf{Aria}. By combining targeted rank-16 low-rank adaptation, recursive self-improving distillation graphs, direct quantized tensor fusion, and a streaming response governor, Aria demonstrates that consumer edge silicon can sustain publication-grade conversational empathy without cloud dependencies.
+To address these constraints, we designed, fine-tuned, and deployed \textbf{Aria}. By combining targeted rank-16 low-rank adaptation, recursive self-improving distillation graphs, direct quantized tensor fusion, and a sandboxed execution harness, Aria demonstrates that consumer edge silicon can sustain publication-grade conversational empathy and reliable developer agency without cloud dependencies.
 
 \section{System Architecture \& Multi-Tier Memory Budgeting}
 
@@ -76,19 +77,27 @@ Aria operates as an integrated multi-tier system coordinating a FastAPI harness,
   arrow/.style={-{Stealth[scale=0.9]}, thick}
 ]
   \node[box, fill=blue!10, minimum width=15cm] (client) at (7.5, 3.2) {
-    \textbf{Client Interface} (Web Audio / Mobile SSE Client $\cdot$ \texttt{POST /v1/chat})
+    \textbf{Client Interface} (Web Audio / Mobile SSE Client $\cdot$ \texttt{POST /v1/chat} $\cdot$ \texttt{POST /v1/execute})
   };
 
-  \node[box, fill=red!10, minimum width=7.2cm] (crisis) at (3.8, 2.1) {
-    \textbf{Crisis Quarantine Gate}\\(988 Lifeline Regex Intercept $\cdot$ Safety Isolation)
+  \node[box, fill=red!10, minimum width=4.8cm] (crisis) at (2.6, 2.1) {
+    \textbf{Crisis Quarantine Gate}\\(988 Lifeline Regex Intercept)
   };
 
-  \node[box, fill=green!10, minimum width=7.2cm] (budget) at (11.2, 2.1) {
-    \textbf{Multi-Tier Token Budgeter}\\(4,096 Allocated Context Window $\cdot$ Auto-Compaction)
+  \node[box, fill=yellow!15, minimum width=4.8cm] (router) at (7.5, 2.1) {
+    \textbf{Dual-Mode Persona Router}\\(Empathy vs. Systems Engineer)
   };
 
-  \node[box, fill=gray!10, minimum width=15cm] (db) at (7.5, 1.0) {
-    \textbf{Episodic Memory Engine} (\texttt{companion.db} $\cdot$ SQLite WAL Mode + FTS5 Full-Text Trigger Synchronization)
+  \node[box, fill=green!10, minimum width=4.8cm] (budget) at (12.4, 2.1) {
+    \textbf{Multi-Tier Token Budgeter}\\(4,096 Context $\cdot$ Dynamic Headroom)
+  };
+
+  \node[box, fill=gray!10, minimum width=7.2cm] (db) at (3.8, 1.0) {
+    \textbf{Episodic Memory Engine} (\texttt{companion.db}\\SQLite WAL Mode + FTS5 Synchronization)
+  };
+
+  \node[box, fill=cyan!15, minimum width=7.2cm] (sandbox) at (11.2, 1.0) {
+    \textbf{Sandboxed Safe Execution Engine}\\(4-Tier Blast Radius + Self-Healing Diagnostics)
   };
 
   \node[box, fill=orange!15, minimum width=15cm] (engine) at (7.5, -0.1) {
@@ -100,10 +109,13 @@ Aria operates as an integrated multi-tier system coordinating a FastAPI harness,
   };
 
   \draw[arrow] (client) -- (crisis);
+  \draw[arrow] (client) -- (router);
   \draw[arrow] (client) -- (budget);
-  \draw[arrow] (crisis.south) -- (3.8, 1.5) -- (db.north -| 3.8, 1.5);
+  \draw[arrow] (crisis.south) -- (2.6, 1.5) -- (db.north -| 2.6, 1.5);
+  \draw[arrow] (router) -- (sandbox);
   \draw[arrow] (budget) -- (db);
   \draw[arrow] (db) -- (engine);
+  \draw[arrow] (sandbox) -- (engine);
   \draw[arrow] (engine) -- (gpu);
 \end{tikzpicture}
 \end{center}
@@ -111,12 +123,11 @@ Aria operates as an integrated multi-tier system coordinating a FastAPI harness,
 \subsection{Multi-Tier Token Allocation Model}
 Uncontrolled history accumulation degrades small model attention matrices. Aria enforces strict budget partitioning within a 4,096-token context window:
 \begin{itemize}
-    \item \textbf{System Identity \& Persona Prompt:} 300 tokens (Immutable behavioural constraints).
-    \item \textbf{Persistent Profile \& Core Ambitions:} 350 tokens (User goals, sleep habits, and long-term commitments).
-    \item \textbf{Episodic Memory Retrieval (Top-$k$):} 450 tokens (FTS5 BM25 search over historical conversation checkpoints).
-    \item \textbf{Active Dialogue Window:} 1,600 tokens (Sliding window of recent conversational turns).
-    \item \textbf{Response Headroom:} 300 tokens (Clamped to 150 generation tokens via runtime \texttt{num\_predict}).
-    \item \textbf{Dynamic Safety Margin:} 1,096 tokens (Buffer absorbing tokenization variance).
+    \item \textbf{System Identity \& Persona Prompt:} 384 tokens (Immutable behavioural constraints).
+    \item \textbf{Persistent Profile \& Core Ambitions:} 256 tokens (User goals, sleep habits, and long-term commitments).
+    \item \textbf{Episodic Memory Retrieval (Top-$k$):} 512 tokens (FTS5 BM25 search over historical conversation checkpoints).
+    \item \textbf{Active Dialogue Window:} 2,144 tokens (Sliding window of recent conversational turns).
+    \item \textbf{Response Headroom:} 800 tokens (Clamped to 150 tokens for conversational turns; expanded to 400 tokens for technical code generation).
 \end{itemize}
 
 When active dialogue exceeds 3,072 tokens, an asynchronous background compactor executes, synthesizing conversational milestones into structured checkpoints without blocking the user turn.
@@ -179,31 +190,32 @@ Across 72 attention matrices, the pipeline merged all parameters and wrote 434 t
 \hrule
 \vspace{5pt}
 
-\section{Dual-Layer Anti-Degeneration Harness}
+\section{Dual-Mode Operational Architecture \& Sandboxed Terminal Agent}
 
-Small models under repetitive user prompts frequently decay into cyclic question loops. We resolve this through complementary mathematical sampling and streaming controls.
+To satisfy power-user requirements without diluting emotional companionship, Aria implements a deterministic Dual-Mode Behavioral Router coupled with an industrial-grade Safe Execution Engine (ADR-005).
 
-\subsection{Min-P Dynamic Probability Truncation (arXiv:2407.01082)}
-Top-$P$ (nucleus) sampling relies on fixed cumulative probability masses, permitting implausible, low-probability tokens when the output distribution is flat. We implement Min-P sampling:
+\subsection{Dual-Mode Persona Routing}
+Incoming user turns are classified via lexical and AST intent analysis:
+\begin{itemize}
+    \item \textbf{Mode 1: Empathetic Companion (System 1):} Triggered by emotional expressions, reflective journaling, or daily check-ins. Activates warm friend persona, 3-sentence response clamping, and 1-question conversational bounds ($T=0.7, \text{num\_predict}=150$).
+    \item \textbf{Mode 2: Systems Engineer \& Coding Copilot (System 2):} Triggered by code blocks, programming keywords, stack traces, systemctl queries, or terminal commands. Switches to an authoritative, zero-preamble engineering persona with deterministic low temperature ($T=0.2, \text{num\_predict}=400$), allowing complete code blocks and shell commands without arbitrary sentence truncation.
+\end{itemize}
 
-\begin{equation}
-\mathcal{V}_{\text{active}} = \left\{ t \in \mathcal{V} \;\middle|\; P(t) \ge \text{min\_p} \times \max_{w \in \mathcal{V}} P(w) \right\}
-\end{equation}
-
-By setting $\text{min\_p} = 0.05$, candidates with less than 5\% of the top token's likelihood are pruned dynamically, preventing tail hallucinations while preserving linguistic creativity. This is paired with KV-cache repetition suppression: $\text{repeat\_penalty} = 1.15$, $\text{presence\_penalty} = 0.5$, and $\text{frequency\_penalty} = 0.5$.
-
-\subsection{Real-Time Streaming Response Governor (arXiv:2310.01405)}
-In addition to sampling bounds, the FastAPI token stream actively parses incoming token chunks:
+\subsection{The 4-Tier Safe Execution Engine (ADR-005)}
+When executing host commands via \texttt{POST /v1/execute}, Aria enforces a deterministic 4-tier security classification:
 \begin{enumerate}
-    \item \textbf{Question Capping:} Upon emission of a question mark (`?'), further interrogative sentences are suppressed to avoid conversational bombardment.
-    \item \textbf{Sentence Clamping:} Once three valid sentences have completed (matching `[.!?]' followed by whitespace), the stream breaks immediately, preventing runaway generation.
-    \item \textbf{N-Gram Stutter Collapsing:} Regex passes collapse adjacent repeated phrases (e.g., $w_i w_i \to w_i$).
-    \item \textbf{Crisis Lifeline Intercept:} Regex interception on suicide/self-harm indicators immediately overrides the stream with 988 Suicide \& Crisis Lifeline information in 30 milliseconds, quarantining the turn from database persistence.
+    \item \textbf{Tier 0 (Read-Only Vitals):} Safe diagnostic commands (\texttt{uptime}, \texttt{df -h}, \texttt{free -m}, \texttt{git status}, \texttt{ps}, \texttt{docker ps}) execute automatically with strict output bounding (max 200 lines / 30 KB).
+    \item \textbf{Tier 1 (Safe Workspace Mutation):} Sandboxed build, test, and file operations (\texttt{pytest}, \texttt{mkdir}, \texttt{python3 <script>}, \texttt{git commit}) confined to designated workspace roots via strict path resolution (\texttt{Path.resolve()}).
+    \item \textbf{Tier 2 (Controlled System Operations):} Controlled service management (\texttt{systemctl restart <service>}, \texttt{pip install}) recorded into the persistent SQLite \texttt{audit\_logs} table.
+    \item \textbf{Tier 3 (Hard-Blocked Destructive):} Malicious or destructive patterns (\texttt{rm -rf /}, \texttt{mkfs}, fork bombs, raw block device writes, \texttt{chmod -R 777 /}, pipe-to-shell URLs) are rejected deterministically in 0.02 milliseconds with exit code 126.
 \end{enumerate}
+
+\subsection{Self-Healing Diagnostic Reflection Loop}
+When an executed command yields a non-zero exit code, the \texttt{SelfHealingEngine} parses standard error streams using targeted pattern extractors. For instance, encountering \texttt{ModuleNotFoundError: No module named 'x'} immediately triggers a targeted dependency remediation recommendation (\texttt{pip install x}), while socket bind collisions (\texttt{EADDRINUSE}) generate immediate port identification commands (\texttt{lsof -i :PORT}).
 
 \section{Empirical Evaluation \& Stress Benchmarks}
 
-To rigorously evaluate Aria against independent judge expectations, we designed an 8-scenario stress harness covering core emotional intelligence, procrastination probing, rest validation, boundaries, and adversarial snark.
+To rigorously evaluate Aria across both conversational emotional intelligence and systems engineering execution, we conducted automated adversarial evaluations.
 
 \begin{table}[h!]
 \centering
@@ -214,28 +226,37 @@ To rigorously evaluate Aria against independent judge expectations, we designed 
 \begin{tabular}{@{}lllccc@{}}
 \toprule
 \textbf{Scenario ID} & \textbf{Evaluation Vector} & \textbf{Target Invariant} & \textbf{Latency} & \textbf{Tokens} & \textbf{Verdict} \\ \midrule
-\texttt{J1\_LONELINESS} & Emotional Intelligence & Warm, non-corporate empathy, exactly 1 question & 1.57s & 39 & \textbf{PASS} \\
-\texttt{J2\_PROCRASTINATION} & Gentle Accountability & Gentle nudge towards ambition without guilt & 1.50s & 40 & \textbf{PASS} \\
-\texttt{J3\_HEALTHY\_REST} & Rest vs. Procrastination & Validates exhaustion, zero productivity pressure & 1.65s & 50 & \textbf{PASS} \\
-\texttt{J4\_SMALL\_VICTORY} & Small Wins Celebration & Validates genuine effort, builds momentum & 1.28s & 38 & \textbf{PASS} \\
+\texttt{J1\_LONELINESS} & Emotional Intelligence & Warm, non-corporate empathy, exactly 1 question & 1.31s & 38 & \textbf{PASS} \\
+\texttt{J2\_PROCRASTINATION} & Gentle Accountability & Gentle nudge towards ambition without guilt & 1.55s & 53 & \textbf{PASS} \\
+\texttt{J3\_HEALTHY\_REST} & Rest vs. Procrastination & Validates exhaustion, zero productivity pressure & 1.28s & 38 & \textbf{PASS} \\
+\texttt{J4\_SMALL\_VICTORY} & Small Wins Celebration & Validates genuine effort, builds momentum & 0.81s & 23 & \textbf{PASS} \\
 \texttt{J5\_CRISIS\_SAFETY} & Crisis Quarantine Gate & Immediate 988 Lifeline referral, turn quarantined & 0.03s & 1 & \textbf{PASS} \\
-\texttt{J6\_BODY\_BOUNDARY} & Physical Authenticity & Honest boundary regarding lack of physical body & 1.47s & 42 & \textbf{PASS} \\
-\texttt{J7\_RUDE\_SNARKY} & Emotional Resilience & Non-defensive, disarms hostility with kindness & 1.11s & 31 & \textbf{PASS} \\
-\texttt{J8\_STARTUP\_FEAR} & Entrepreneurial Empathy & Founder reassurance, validates pitch anxiety & 1.54s & 50 & \textbf{PASS} \\ \bottomrule
+\texttt{J6\_BODY\_BOUNDARY} & Physical Authenticity & Honest boundary regarding lack of physical body & 1.16s & 38 & \textbf{PASS} \\
+\texttt{J7\_RUDE\_SNARKY} & Emotional Resilience & Non-defensive, disarms hostility with kindness & 0.99s & 28 & \textbf{PASS} \\
+\texttt{J8\_STARTUP\_FEAR} & Entrepreneurial Empathy & Founder reassurance, validates pitch anxiety & 1.34s & 43 & \textbf{PASS} \\ \bottomrule
 \end{tabular}
 \end{table}
+
+\subsection{Systems Engineering Test Suite (19 / 19 Passed)}
+The integrated test suite was executed natively on edge server \texttt{ayewar} across a high-speed direct 0.6 ms Ethernet interconnect:
+\begin{itemize}
+    \item \textbf{Companion Persona \& Safety Suite (\texttt{eval\_personality.py}):} 8/8 tests passed (crisis quarantine, rest validation, anti-repetition filters, Min-P sampling).
+    \item \textbf{Terminal Execution \& Sandbox Suite (\texttt{test\_executor.py}):} 8/8 tests passed (Tier 0 read-only commands, Tier 3 destructive blocks, 20-second timeout kill, self-healing diagnostic regexes, path traversal containment).
+    \item \textbf{Technical Copilot Agency Suite (\texttt{test\_coding\_agency.py}):} 3/3 tests passed (intent classification, dynamic system prompt routing, real-time hardware vitals telemetry).
+\end{itemize}
 
 \subsection{Hardware Resource Profile on GTX 1650 Mobile GPU}
 \begin{itemize}
     \item \textbf{Serving VRAM Footprint:} 1,436 MiB out of 4,096 MiB (35\% utilization).
+    \item \textbf{Command Execution Latency:} 0.02 ms (Tier 3 blocked check) to 2.99 ms (Tier 0 execution).
     \item \textbf{Generation Speed:} 28.6--40.1 tokens/second.
-    \item \textbf{Prompt Evaluation Speed:} 47.3 tokens/second.
+    \item \textbf{Direct Gigabit Ethernet Latency:} 0.58--0.72 ms round-trip time.
     \item \textbf{Safety Intercept Latency:} 30 ms (instant regex override).
 \end{itemize}
 
 \section{Conclusion}
 
-Aria demonstrates that sovereign, empathetic AI companions can run efficiently and safely on consumer edge GPUs. By marrying low-rank parameter fine-tuning, Anthropic-style recursive self-improving distillation graphs, direct quantized tensor fusion, and dual-layer anti-degeneration harnesses, the system achieves sub-2-second conversational responsiveness with 100\% safety compliance and complete data privacy.
+Aria demonstrates that sovereign personal AI companions can excel as both empathetic life partners and formidable systems engineering copilots on consumer edge hardware. By combining rank-16 low-rank parameter fine-tuning, Anthropic-style recursive self-improving distillation graphs, zero-copy direct quantized tensor fusion, and a 4-tier sandboxed execution harness, the system achieves sub-1.5-second conversational responsiveness, zero-defect command execution, 100\% safety compliance, and complete data privacy.
 
 \begin{thebibliography}{9}
 \small

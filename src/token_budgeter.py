@@ -92,13 +92,28 @@ def compile_budgeted_prompt(
     
     return compiled_messages, total_active_tokens, compaction_needed
 
-def get_chat_generation_options() -> Dict[str, Any]:
+def get_chat_generation_options(is_technical: bool = False) -> Dict[str, Any]:
     """
     Inference-Time Guardrails & Sampling:
     - min_p (arXiv:2407.01082): Dynamically clips hallucinated low-prob tail tokens.
     - repeat_penalty, presence_penalty, frequency_penalty: Prevents autoregressive repetition loops.
+    - Dual-mode tuning: low temperature (0.2) + expanded headroom (400 tokens) for coding/technical precision;
+      balanced temperature (0.7) for warm conversational empathy.
     - stop sequences: Truncates multi-turn runaway hallucinations.
     """
+    if is_technical:
+        return {
+            "num_ctx": MAX_CONTEXT_TOKENS,
+            "num_predict": 400,
+            "temperature": 0.2, # Highly deterministic for zero-defect code & commands
+            "top_p": 0.95,
+            "min_p": 0.05,
+            "repeat_penalty": 1.10,
+            "presence_penalty": 0.2,
+            "frequency_penalty": 0.2,
+            "repeat_last_n": 64,
+            "stop": ["\nUser:", "\nHuman:", "\n###", "<|im_end|>", "<|endoftext|>"]
+        }
     return {
         "num_ctx": MAX_CONTEXT_TOKENS,
         "num_predict": NUM_PREDICT_CHAT,

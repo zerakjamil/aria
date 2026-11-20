@@ -24,6 +24,7 @@ from src.db import (
     get_latest_checkpoint,
     get_user_profile,
     upsert_user_profile,
+    insert_audit_log,
 )
 from src.token_budgeter import (
     compile_budgeted_prompt,
@@ -33,11 +34,14 @@ from src.token_budgeter import (
 from src.retriever import retrieve_episodic_memories
 from src.guardrails import (
     BASE_PERSONALITY_PROMPT,
+    TECHNICAL_COPILOT_PROMPT,
+    select_personality_prompt,
     inspect_crisis_intervention,
     is_within_quiet_hours,
     sanitize_response_length,
 )
 from src.compactor import compactor
+from src.tools import default_tools
 
 app = FastAPI(title="Sovereign AI Personal Companion", version="1.0.0")
 
@@ -45,6 +49,10 @@ class ChatRequest(BaseModel):
     conversation_id: str = "conv_default"
     message: str
     stream: bool = True
+
+class ExecuteRequest(BaseModel):
+    command: str
+    cwd: Optional[str] = None
 
 class CheckinRequest(BaseModel):
     conversation_id: str = "conv_default"
@@ -96,6 +104,28 @@ async def list_memories():
     profile = await get_user_profile()
     return {"profile": profile}
 
+@app.post("/v1/execute")
+async def execute_command_endpoint(req: ExecuteRequest):
+    command = req.command.strip()
+    if not command:
+        raise HTTPException(status_code=400, detail="Command cannot be empty")
+
+    result = default_tools.execute_terminal_command(command, cwd=req.cwd)
+    await insert_audit_log(
+        command=result["command"],
+        blast_radius=result["blast_radius"],
+        exit_code=result["exit_code"],
+        stdout=result["stdout"],
+        stderr=result["stderr"],
+        duration_ms=result["duration_ms"],
+        is_safe=result["is_safe"]
+    )
+    return result
+
+@app.get("/v1/system/vitals")
+async def system_vitals_endpoint():
+    return default_tools.get_system_vitals()
+
 @app.post("/v1/chat")
 async def chat_endpoint(req: ChatRequest):
     conversation_id = req.conversation_id
@@ -127,8 +157,10 @@ async def chat_endpoint(req: ChatRequest):
     history_rows = await get_active_messages(conversation_id, limit=20)
     dialogue_history = [{"role": r["role"], "content": r["content"]} for r in history_rows if r["role"] in ("user", "assistant")]
 
+    personality_prompt, is_technical = select_personality_prompt(user_text)
+
     compiled_messages, active_tokens, compaction_needed = compile_budgeted_prompt(
-        BASE_PERSONALITY_PROMPT,
+        personality_prompt,
         profile_cards,
         memories,
         dialogue_history,
@@ -143,7 +175,7 @@ async def chat_endpoint(req: ChatRequest):
         "model": MODEL_NAME,
         "messages": compiled_messages,
         "stream": True,
-        "options": get_chat_generation_options()
+        "options": get_chat_generation_options(is_technical=is_technical)
     }
 
     async def token_generator():
@@ -166,7 +198,7 @@ async def chat_endpoint(req: ChatRequest):
                                 chunk_json = json.loads(line)
                                 msg_chunk = chunk_json.get("message", {}).get("content", "")
                                 if msg_chunk:
-                                    if "?" in msg_chunk:
+                                    if "?" in msg_chunk and not is_technical:
                                         if question_count >= 1:
                                             stream_finished = True
                                             break
@@ -175,18 +207,19 @@ async def chat_endpoint(req: ChatRequest):
                                     assistant_chunks.append(msg_chunk)
                                     yield f"data: {json.dumps({'token': msg_chunk, 'total_tokens': active_tokens})}\n\n"
 
-                                    acc = "".join(assistant_chunks)
-                                    sents = [s for s in re.split(r'(?<=[.!?])\s+', acc) if s.strip() and re.search(r'\w', s)]
-                                    if len(sents) >= 3 and acc.rstrip().endswith((".", "!", "?")):
-                                        stream_finished = True
-                                        break
+                                    if not is_technical:
+                                        acc = "".join(assistant_chunks)
+                                        sents = [s for s in re.split(r'(?<=[.!?])\s+', acc) if s.strip() and re.search(r'\w', s)]
+                                        if len(sents) >= 3 and acc.rstrip().endswith((".", "!", "?")):
+                                            stream_finished = True
+                                            break
 
                                 if chunk_json.get("done", False):
                                     break
                             except Exception:
                                 continue
         finally:
-            full_assistant_reply = sanitize_response_length("".join(assistant_chunks))
+            full_assistant_reply = sanitize_response_length("".join(assistant_chunks), is_technical=is_technical)
             assist_msg_id = f"msg_{uuid.uuid4().hex[:12]}"
             if full_assistant_reply:
                 assist_tokens = estimate_tokens(full_assistant_reply)

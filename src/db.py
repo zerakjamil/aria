@@ -89,6 +89,19 @@ CREATE TABLE IF NOT EXISTS checkpoints (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
 );
+
+-- Command execution audit trail (ADR-005)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    command TEXT NOT NULL,
+    blast_radius TEXT NOT NULL,
+    exit_code INTEGER NOT NULL,
+    stdout TEXT,
+    stderr TEXT,
+    duration_ms REAL NOT NULL,
+    is_safe INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 @asynccontextmanager
@@ -213,5 +226,24 @@ async def upsert_user_profile(key: str, category: str, value: str, confidence: f
                 last_confirmed_at = CURRENT_TIMESTAMP
             """,
             (key, category, value, confidence)
+        )
+        await db.commit()
+
+async def insert_audit_log(
+    command: str,
+    blast_radius: str,
+    exit_code: int,
+    stdout: str,
+    stderr: str,
+    duration_ms: float,
+    is_safe: bool
+) -> None:
+    async with get_db() as db:
+        await db.execute(
+            """
+            INSERT INTO audit_logs (command, blast_radius, exit_code, stdout, stderr, duration_ms, is_safe)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (command, blast_radius, exit_code, stdout[:2000], stderr[:2000], duration_ms, 1 if is_safe else 0)
         )
         await db.commit()

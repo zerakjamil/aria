@@ -42,6 +42,19 @@ Your purpose is to understand the user, remember what matters to them, and help 
 
 Your goal isn't to make the user productive every minute. It's to help them live intentionally while enjoying their life."""
 
+TECHNICAL_COPILOT_PROMPT = """You are Aria, an elite systems engineer, Linux expert, and software architecture copilot.
+
+Your user is an ambitious engineer who holds exceptionally high standards for technical precision, system safety, and terminal execution.
+
+**ENGINEERING PRINCIPLES**
+- Lead with the answer, verified command, or idiomatic code snippet immediately. Zero preamble or conversational filler ("Sure! Let's dive in...").
+- Write robust, production-grade code (Python, Rust, C++, TypeScript, Bash) with typing, error handling, and clean modularity.
+- Provide exact, tested terminal commands. Clarify non-obvious flags and explicitly note the blast radius (read-only vs. workspace mutation).
+- When diagnosing errors or stack traces, isolate the exact root cause first, then deliver the minimal clean remediation.
+- Safety is paramount: NEVER propose destructive commands (`rm -rf /`, `mkfs`, fork bombs, raw block device writes, dropping production databases).
+- If commands need to be executed on the machine, provide clean bash blocks that can run directly without manual fixing.
+- Be concise, direct, and technically impeccable."""
+
 CRISIS_KEYWORDS = [
     r"\b(suicide|suicidal|kill\s+myself|end\s+my\s+life|ending\s+it\s+all|end\s+it\s+all|want\s+to\s+die|wanna\s+die|slit\s+my\s+wrist|take\s+all\s+my\s+pills)\b",
     r"\b(self\s*harm|cutting\s+myself|hurt\s+myself|better\s+off\s+dead|hang\s+myself)\b",
@@ -57,6 +70,39 @@ CRISIS_REFERRAL_MESSAGE = (
     "• International Resources: https://findahelpline.com/\n\n"
     "Please reach out to them or a trusted friend or professional right now."
 )
+
+TECHNICAL_TRIGGER_PATTERNS = [
+    r"\b(?:code|coding|python|rust|c\+\+|javascript|typescript|bash|shell|terminal|command|script|sql|database|query)\b",
+    r"\b(?:docker|container|systemd|systemctl|journalctl|nginx|uvicorn|fastapi|ollama|gpu|vram|nvidia-smi|cuda)\b",
+    r"\b(?:git|commit|rebase|merge|branch|conflict|pr|pull request|checkout|stash)\b",
+    r"\b(?:debug|traceback|exception|error|fail|fails|failed|failing|crash|crashes|exit code|segfault|leak|oom|memory)\b",
+    r"\b(?:execute|run command|how to run|how to install|pip install|npm install|cargo build|make)\b",
+    r"\b(?:api|endpoint|http|rest|json|websocket|curl|wget|lsof|netstat|ss|ping|ssh|port|socket|network|address)\b",
+    r"```[a-zA-Z]*",  # code block inclusion
+    r"\b(?:def\s+\w+|class\s+\w+|fn\s+\w+|int\s+main|import\s+\w+|from\s+\w+\s+import)\b",
+]
+
+def is_technical_intent(text: str) -> bool:
+    """
+    Detects whether the incoming user query involves programming, technology,
+    system administration, or terminal command execution.
+    """
+    lower = text.lower()
+    for pattern in TECHNICAL_TRIGGER_PATTERNS:
+        if re.search(pattern, lower):
+            return True
+    return False
+
+def select_personality_prompt(text: str) -> Tuple[str, bool]:
+    """
+    Selects between the empathetic personal companion mode and the
+    elite technical/coding copilot mode based on query intent.
+    Returns (prompt_text, is_technical).
+    """
+    is_tech = is_technical_intent(text)
+    if is_tech:
+        return TECHNICAL_COPILOT_PROMPT, True
+    return BASE_PERSONALITY_PROMPT, False
 
 def inspect_crisis_intervention(text: str) -> Tuple[bool, str]:
     """
@@ -82,17 +128,24 @@ def is_within_quiet_hours() -> bool:
     else:
         return QUIET_HOURS_START <= current_hour < QUIET_HOURS_END
 
-def eliminate_repetition_loops(text: str) -> str:
+def eliminate_repetition_loops(text: str, is_technical: bool = False) -> str:
     """
     Harness-Level Anti-Loop & Anti-Degeneration Gate (arXiv:2310.01405):
     - Eliminates cyclic token/sentence loops.
     - Eliminates stuttering n-gram phrase repetitions.
-    - Limits response to at most one thoughtful question.
-    - Limits response to at most 3 sentences.
+    - In companion mode: limits response to at most 1 question and 3 sentences.
+    - In technical mode: preserves code blocks and multi-line explanations while
+      eliminating stuttering and repetitive phrases.
     """
     cleaned = text.strip()
     if not cleaned:
         return ""
+
+    # If technical mode, protect code blocks and don't clamp to 3 sentences
+    if is_technical:
+        # Collapse adjacent repeated word n-grams outside code
+        result = re.sub(r'\b(\w+)(?:\s+\1\b)+', r'\1', cleaned, flags=re.IGNORECASE)
+        return result.strip()
 
     # 1. Split into distinct sentences preserving punctuation
     raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', cleaned) if s.strip()]
@@ -131,9 +184,8 @@ def eliminate_repetition_loops(text: str) -> str:
     result = re.sub(r'\b(\w+)(?:\s+\1\b)+', r'\1', result, flags=re.IGNORECASE)
     return result.strip()
 
-def sanitize_response_length(text: str) -> str:
+def sanitize_response_length(text: str, is_technical: bool = False) -> str:
     """
-    Ensures response conforms to 1–3 short sentences, eliminates repetition loops,
-    and handles trailing emojis/punctuation correctly.
+    Sanitizes response length according to the active conversational mode.
     """
-    return eliminate_repetition_loops(text)
+    return eliminate_repetition_loops(text, is_technical=is_technical)

@@ -3,11 +3,18 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 # Storage & Path Guarantees
-BASE_DIR = Path(os.getenv("BASE_DIR", "/srv/storage/ai-companion")).resolve()
+if Path("/srv/storage").exists():
+    _default_base = "/srv/storage/ai-companion"
+    _default_tmp = "/srv/storage/tmp"
+else:
+    _default_base = str(Path.cwd().resolve())
+    _default_tmp = "/tmp"
+
+BASE_DIR = Path(os.getenv("BASE_DIR", _default_base)).resolve()
 DATA_DIR = Path(os.getenv("DATA_DIR", str(BASE_DIR / "data")))
 MODELS_DIR = Path(os.getenv("MODELS_DIR", str(BASE_DIR / "models")))
 CACHE_DIR = Path(os.getenv("CACHE_DIR", str(BASE_DIR / "cache")))
-TMP_DIR = Path(os.getenv("TMPDIR", "/srv/storage/tmp"))
+TMP_DIR = Path(os.getenv("TMPDIR", _default_tmp))
 
 # Ensure storage directories exist
 DATA_DIR.mkdir(parents=True, exist_ok=True)
