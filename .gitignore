@@ -1,0 +1,33 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+build/
+dist/
+*.egg-info/
+
+# Runtime storage & database
+data/
+*.db
+*.sqlite
+*.sqlite3
+cache/
+models/
+
+# Model binaries & optimizer states
+*.gguf
+*.bin
+*.pt
+*.pth
+checkpoint-*/
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS metadata
+.DS_Store
+Thumbs.db

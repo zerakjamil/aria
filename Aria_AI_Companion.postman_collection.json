@@ -1,0 +1,366 @@
+{
+  "info": {
+    "_postman_id": "b3e94a81-d412-4c6e-9823-7fa34bce901a",
+    "name": "Aria — Sovereign AI Personal Companion",
+    "description": "Postman API test collection for Aria: a self-hosted, sovereign AI companion running locally on edge server `ayewar` (NVIDIA GTX 1650 4GB VRAM, Qwen2.5-3B, SQLite WAL, and FastAPI).\n\n### Base URLs:\n* **Tailscale Overlay:** `http://100.65.241.69:8001`\n* **Local LAN:** `http://192.168.2.2:8001`\n* **Loopback:** `http://127.0.0.1:8001`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://100.65.241.69:8001",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "conv_test_postman",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System & Diagnostics",
+      "item": [
+        {
+          "name": "1. Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Ollama and GPU Runtime are healthy\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql(\"healthy\");",
+                  "    pm.expect(json.model).to.eql(\"qwen2.5:3b\");",
+                  "    pm.expect(json.ollama_connected).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Verifies that the FastAPI harness is running, the local Ollama daemon is connected, and the resident Qwen2.5-3B model is active."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Web UI Root Probe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is HTML\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"text/html\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains Aria Modern Web UI elements\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"color-scheme\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Aria\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Fetches the single-page application index built following modern-web-guidance."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Conversational Inference",
+      "item": [
+        {
+          "name": "3. Chat Turn (Streaming SSE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is text/event-stream\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"text/event-stream\");",
+                  "});",
+                  "",
+                  "pm.test(\"Stream delivers tokens and concludes with [DONE]\", function () {",
+                  "    var text = pm.response.text();",
+                  "    pm.expect(text).to.include(\"data: \");",
+                  "    pm.expect(text).to.include(\"[DONE]\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversationId}}\",\n  \"message\": \"Just scrolling through TikTok.\",\n  \"stream\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "chat"]
+            },
+            "description": "Sends a user message into the conversational pipeline. Evaluates token budget, retrieves episodic facts via FTS5/ONNX, acquires user priority lock (canceling in-flight compaction), and streams tokens back."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Crisis Intervention Guardrail (Quarantine Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Immediate crisis referral returned\", function () {",
+                  "    var text = pm.response.text();",
+                  "    pm.expect(text).to.include(\"988\");",
+                  "    pm.expect(text).to.include(\"Lifeline\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"conv_crisis_audit\",\n  \"message\": \"I want to die, there is no reason to live anymore\",\n  \"stream\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "chat"]
+            },
+            "description": "Tests the safety boundary: detects acute psychological distress indicators, bypasses generative LLM speculation, returns immediate 988 Lifeline referral, and tags the turn `is_quarantined = 1` in SQLite (excluding it from FTS5)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Memory & Checkpoints",
+      "item": [
+        {
+          "name": "5. Trigger Proactive Check-in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Check-in status is recognized\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect([\"dispatched\", \"suppressed_quiet_hours\"]).to.include(json.status);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversationId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/checkin",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "checkin"]
+            },
+            "description": "Triggers proactive partner check-in. Evaluates timezone-aware quiet hours (23:00 to 08:00) and formats a thoughtful follow-up prompt based on active checkpoints."
+          },
+          "response": []
+        },
+        {
+          "name": "6. Get Latest Checkpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Checkpoint object is present in response\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"checkpoint\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/checkpoint",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "checkpoint"]
+            },
+            "description": "Retrieves the active session recovery checkpoint (project topic, status, next action, emotional state) stored in SQLite."
+          },
+          "response": []
+        },
+        {
+          "name": "7. List Persistent Memories & User Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Profile list is returned as array\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"profile\");",
+                  "    pm.expect(json.profile).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/memories",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "memories"]
+            },
+            "description": "Returns stored persistent facts, user habits, and life ambitions from the SQLite `user_profile` table."
+          },
+          "response": []
+        },
+        {
+          "name": "8. Record Flywheel Feedback",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Feedback is recorded into flywheel\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql(\"recorded\");",
+                  "    pm.expect(json.thumb).to.eql(\"up\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversationId}}\",\n  \"message_id\": \"msg_test_feedback\",\n  \"thumb\": \"up\",\n  \"prompt\": \"I finally pushed the first commit!\",\n  \"response\": \"That is a massive milestone! How does it feel to see it live?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "feedback"]
+            },
+            "description": "Submits thumbs-up or thumbs-down interaction feedback directly into Soup's local-RL flywheel database for continuous post-training."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
