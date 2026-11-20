@@ -42,6 +42,7 @@ from src.guardrails import (
 )
 from src.compactor import compactor
 from src.tools import default_tools
+from src.agent_loop import agent_loop, AgentTaskResult
 
 app = FastAPI(title="Sovereign AI Personal Companion", version="1.0.0")
 
@@ -53,6 +54,10 @@ class ChatRequest(BaseModel):
 class ExecuteRequest(BaseModel):
     command: str
     cwd: Optional[str] = None
+
+class AgentTaskRequest(BaseModel):
+    task: str
+    required_slots: Optional[List[str]] = None
 
 class CheckinRequest(BaseModel):
     conversation_id: str = "conv_default"
@@ -125,6 +130,13 @@ async def execute_command_endpoint(req: ExecuteRequest):
 @app.get("/v1/system/vitals")
 async def system_vitals_endpoint():
     return default_tools.get_system_vitals()
+
+@app.post("/v1/agent/task", response_model=AgentTaskResult)
+async def run_agent_task_endpoint(req: AgentTaskRequest):
+    task_desc = req.task.strip()
+    if not task_desc:
+        raise HTTPException(status_code=400, detail="Task description cannot be empty")
+    return await agent_loop.execute_task(task_desc, required_slots=req.required_slots)
 
 @app.post("/v1/chat")
 async def chat_endpoint(req: ChatRequest):
