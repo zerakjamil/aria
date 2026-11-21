@@ -9,6 +9,8 @@ from src.executor import SafeExecutor, ExecutionResult, BlastRadius
 from src.tools import CodebaseTools, default_tools
 from src.token_budgeter import get_chat_generation_options, estimate_tokens
 from src.config import OLLAMA_URL, MODEL_NAME
+from src.counterfactual_engine import CounterfactualEngine
+from src.self_improving_harness import SelfImprovingHarness, harness_singleton
 import httpx
 
 class AgentStep(BaseModel):
@@ -35,9 +37,10 @@ class SlotClosedAgentLoop:
     Constrains 3B SLM execution loops to prevent token bloat, infinite tool calling,
     and out-of-distribution hallucinations by enforcing deterministic slot tracking.
     """
-    def __init__(self, tools: Optional[CodebaseTools] = None, max_steps: int = 5):
+    def __init__(self, tools: Optional[CodebaseTools] = None, max_steps: int = 5, harness: Optional[SelfImprovingHarness] = None):
         self.tools = tools or default_tools
         self.max_steps = max_steps
+        self.harness = harness or harness_singleton
 
     def extract_action(self, response_text: str) -> Tuple[str, str, str]:
         """
@@ -136,6 +139,10 @@ class SlotClosedAgentLoop:
             raw_reply = await self.query_model(prompt)
             thought, action_type, payload = self.extract_action(raw_reply)
 
+            # Apply AGENT_CONTROL runtime hooks (arXiv:2611.22299v1)
+            history_dicts = [s.model_dump() if hasattr(s, "model_dump") else s.__dict__ for s in steps]
+            action_type, payload, was_intercepted = self.harness.apply_control_hooks(action_type, payload, history_dicts)
+
             if action_type == "finish" or (action_type != "vitals" and not payload):
                 total_duration_ms = (time.perf_counter() - start_time) * 1000.0
                 clean_final = payload or (thought if thought and thought != "Evaluating execution step." else raw_reply) or "Task completed successfully."
@@ -161,6 +168,10 @@ class SlotClosedAgentLoop:
                 obs_text = res["stdout"] if exit_code == 0 else f"ERROR (exit {exit_code}): {res['stderr']}"
                 if res.get("remediation_hint"):
                     obs_text += f"\n[REMEDIATION]: {res['remediation_hint']}"
+                if exit_code != 0:
+                    cf = CounterfactualEngine.diagnose_execution(action=payload, exit_code=exit_code, stderr=res.get("stderr", ""), stdout=res.get("stdout", ""))
+                    if cf.is_disturbance:
+                        obs_text += f"\n[COUNTERFACTUAL DISTURBANCE ({cf.disturbance_type.value})]: {cf.explanation}\n[ESTIMATED REMEDY]: {cf.remedy_action}"
 
             elif action_type == "read_file":
                 res = self.tools.read_code_file(payload)
@@ -223,6 +234,13 @@ class SlotClosedAgentLoop:
 
             # Append to ongoing context
             observation_context += f"\n[Step {step_idx} - {action_type} {payload}]:\n{obs_text[:500]}\n"
+
+        # Closed-loop harness diagnosis and self-improvement (arXiv:2611.22299v1)
+        diag = self.harness.diagnose_trajectory(steps)
+        if diag:
+            patch = self.harness.propose_patch(diag)
+            if self.harness.validate_patch(patch):
+                self.harness.deploy_patch(patch)
 
         # Max steps exceeded
         total_duration_ms = (time.perf_counter() - start_time) * 1000.0

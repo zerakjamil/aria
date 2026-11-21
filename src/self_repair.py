@@ -20,6 +20,7 @@ from pathlib import Path
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.test_time_reasoning import ThinkThenActEngine
+from src.counterfactual_engine import CounterfactualEngine, DisturbanceType
 
 
 @dataclass
@@ -167,6 +168,15 @@ class ShellTracebackDistiller:
                 message=f"Executable '{cmd_name}' not found in PATH.",
                 raw_stderr=clean_stderr
             )
+        cf = CounterfactualEngine.diagnose_execution(action=command or "", exit_code=exit_code, stderr=clean_stderr)
+        if cf.is_disturbance:
+            return LocalizedTraceback(
+                error_type=f"Disturbance_{cf.disturbance_type.value}",
+                failing_code=command,
+                assertion_detail=f"DisturbanceType.{cf.disturbance_type.value}",
+                message=f"{cf.explanation} Suggested counterfactual remedy: `{cf.remedy_action}`",
+                raw_stderr=clean_stderr
+            )
         if "permission denied" in clean_stderr.lower():
             return LocalizedTraceback(
                 error_type="PermissionDenied",
@@ -239,6 +249,9 @@ class ReflexionMemory:
         elif err_type == "TimeoutExpired":
             hypothesis = "Infinite loop or quadratic/exponential complexity bottleneck."
             action = "Ensure while/for loops make monotonic progress towards termination and optimize redundant traversals."
+        elif err_type.startswith("Disturbance_"):
+            hypothesis = f"Execution interrupted by environmental disturbance ({err_type}). Underlying command or code logic is preserved."
+            action = f"Apply environmental counterfactual remedy before modifying logic: {tb.message}."
         else:
             hypothesis = f"Runtime exception {err_type}: {tb.message}."
             action = "Refactor logic to prevent exception and ensure invariants hold across all inputs."
