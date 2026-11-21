@@ -363,25 +363,29 @@ Grounded in canonical architectures for verbal reinforcement and software engine
 
 \begin{table}[h!]
 \centering
-\caption{HumanEval-Fix Comparative Debugging Benchmark ($N=20$ Problems)}
+\caption{HumanEval-Fix Comparative Debugging Benchmark on Phase 7 Fused Weights ($N=20$ Problems)}
 \label{tab:humaneval_fix}
 \footnotesize
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
 \textbf{Experimental Condition} & \textbf{Pass@1} & \textbf{Pass / $N$} & \textbf{Repair Rate} & \textbf{Mean Latency} & \textbf{Mean Tokens} \\ \midrule
-Condition A: Single-Shot (No Feedback) & 50.0\% & 10 / 20 & Baseline & 9,235.2 ms & 319.4 \\
-Condition B: Sandbox Repair ($K_{\max}=3$) & \textbf{60.0\%} & \textbf{12 / 20} & \textbf{20.0\%} (2 / 10) & 14,404.4 ms & 469.2 \\ \midrule
-\textbf{Execution-Guided Repair Delta ($\Delta$)} & \textbf{+10.0\%} & \textbf{+2 problems} & \textbf{+20.0\% recovery} & +5,169.2 ms & +149.8 \\ \bottomrule
+Condition A: Single-Shot (No Feedback) & 25.0\% & 5 / 20 & Baseline & 7,341.2 ms & 245.8 \\
+Condition B: Sandbox Repair ($K_{\max}=3$) & \textbf{55.0\%} & \textbf{11 / 20} & \textbf{40.0\%} (6 / 15) & 13,450.5 ms & 386.3 \\ \midrule
+\textbf{Execution-Guided Repair Delta ($\Delta$)} & \textbf{+30.0\%} & \textbf{+6 problems} & \textbf{+40.0\% recovery} & +6,109.3 ms & +140.5 \\ \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Empirical Analysis of Repair Dynamics:} Across the 20-problem debugging suite, single-shot generation without feedback resolved 10/20 defects. With sandbox feedback and Reflexion memory, the model successfully repaired 2 previously failing problems on Attempt 2:
+\textbf{Empirical Analysis of Repair Dynamics:} Across the 20-problem debugging suite on the Phase 7 fused model, single-shot generation without feedback resolved 5/20 defects. With sandbox execution telemetry and Reflexion memory, the model successfully diagnosed and repaired 6 previously failing problems across subsequent attempts (achieving a 40.0\% repair recovery rate):
 \begin{itemize}
-    \item \texttt{Fix/7\_string\_xor}: Attempt 1 failed with \texttt{AssertionError} at line 12 (`assert candidate('010', '110') == '100'`). The Reflexion engine distilled the failing assertion, prompting the model to re-align character-wise bit extraction, resolving the defect in Attempt 2 ($\text{exit}=0$, 231 tokens, 11,051 ms).
-    \item \texttt{Fix/19\_filter\_by\_prefix}: Attempt 1 failed with \texttt{NameError} on unimported \texttt{List[str]} typing annotations. The distilled error signaled the missing name, allowing Attempt 2 to eliminate typing dependencies and pass immediately ($\text{exit}=0$, 64 tokens, 3,842 ms).
+    \item \texttt{Fix/2\_below\_zero}: Attempt 1 crashed with unimported \texttt{List[int]} annotations. Reflexion distilled the \texttt{NameError}, allowing Attempt 2 to simplify typing and pass all bank balance assertions ($\text{exit}=0$, 74 tokens, 4,056 ms).
+    \item \texttt{Fix/6\_rolling\_max}: Attempt 1 failed with missing typing definitions. Attempt 2 absorbed the sandbox trace and emitted clean rolling accumulator logic ($\text{exit}=0$, 77 tokens, 4,237 ms).
+    \item \texttt{Fix/8\_longest}: Attempt 1 failed assertion checks on empty lists. Attempt 2 adjusted guard clauses and passed cleanly on Attempt 3 ($\text{exit}=0$).
+    \item \texttt{Fix/16\_find\_closest\_elements}: Attempt 1 failed on typing import dependencies. Attempt 2 rectified tuple signatures and passed distance comparison tests ($\text{exit}=0$, 143 tokens, 6,400 ms).
+    \item \texttt{Fix/18\_unique\_elements}: Attempt 1 crashed on typing syntax. Attempt 2 produced an idiomatic sorted unique list in 28 tokens and 2,724 ms ($\text{exit}=0$).
+    \item \texttt{Fix/19\_filter\_by\_prefix}: Attempt 1 encountered \texttt{NameError}. Reflexion memory guided Attempt 2 to clean string prefix filtering, passing all test vectors ($\text{exit}=0$, 71 tokens, 4,015 ms).
 \end{itemize}
-This demonstrates that execution-grounded backtracking enables small 3B models to achieve verifiable self-repair on deterministic algorithmic bugs without human intervention.
+This demonstrates that execution-grounded backtracking enables small 3B models to achieve a +30.0\% absolute accuracy surge on deterministic algorithmic bugs without human intervention.
 
 \section{Conclusion}
 
