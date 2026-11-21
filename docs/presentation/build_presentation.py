@@ -658,8 +658,76 @@ html_content = r'''<!doctype html>
         </div>
       </section>
 
-      <!-- SLIDE 7: BENCHMARK RIGOR -->
+      <!-- SLIDE 7: HEAD-TO-HEAD COMPARISON -->
       <section class="slide" data-slide="7">
+        <div class="slide-top">
+          <h2>Aria vs. Qwen2.5-Coder</h2>
+        </div>
+        <div class="content grid-2">
+          <!-- Base Qwen Card -->
+          <div class="panel" style="border-color: rgba(148, 163, 184, 0.25); background: rgba(15, 23, 42, 0.45); padding: 1.8cqw;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.4cqw; padding-bottom: 0.8cqw; border-bottom: 1px solid rgba(148, 163, 184, 0.2);">
+              <span style="font-size: 1.35cqw; font-weight: 800; color: #94a3b8;">Qwen2.5-Coder-3B</span>
+              <span style="font-family: var(--font-mono); font-size: 0.75cqw; color: #64748b; background: rgba(255,255,255,0.05); padding: 0.3cqw 0.7cqw; border-radius: 4px;">Base Foundation</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1.1cqw;">
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75cqw; color: #f43f5e; font-weight: 700; margin-bottom: 0.2cqw;">✕ CONVERSATIONAL EMPATHY</div>
+                <div style="font-size: 0.85cqw; color: #cbd5e1; line-height: 1.35;">Rejects personal queries with canned assistant disclaimers ("I am a large language model..."). Zero emotional presence.</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75cqw; color: #f43f5e; font-weight: 700; margin-bottom: 0.2cqw;">✕ TERMINAL SAFETY</div>
+                <div style="font-size: 0.85cqw; color: #cbd5e1; line-height: 1.35;">Ungated shell output. Emits destructive root commands (e.g., recursive deletions, raw disk formats) without security checks.</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75cqw; color: #f43f5e; font-weight: 700; margin-bottom: 0.2cqw;">✕ FAULT RECOVERY</div>
+                <div style="font-size: 0.85cqw; color: #cbd5e1; line-height: 1.35;">Single-shot code generation only. Fails on syntax or runtime crashes with 0% automated recovery capability.</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75cqw; color: #f43f5e; font-weight: 700; margin-bottom: 0.2cqw;">✕ EDGE RUNTIME</div>
+                <div style="font-size: 0.85cqw; color: #cbd5e1; line-height: 1.35;">FP16 requires ~6.8 GB VRAM causing instant OOM on 4GB edge GPUs; standard quant lacks pinned host RAM caching.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fine-Tuned Aria Card -->
+          <div class="panel highlight" style="border-color: var(--emerald); background: rgba(8, 56, 52, 0.45); padding: 1.8cqw;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.4cqw; padding-bottom: 0.8cqw; border-bottom: 1px solid rgba(16, 185, 129, 0.25);">
+              <span style="font-size: 1.35cqw; font-weight: 800; color: var(--emerald);">Aria-3B</span>
+              <span style="font-family: var(--font-mono); font-size: 0.75cqw; color: var(--cyan); background: rgba(24, 226, 204, 0.1); border: 1px solid rgba(24, 226, 204, 0.3); padding: 0.3cqw 0.7cqw; border-radius: 4px;">Sovereign Edge Agent</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1.1cqw;">
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75cqw; color: var(--emerald); font-weight: 700; margin-bottom: 0.2cqw;">✓ DUAL-BRAIN COMPANION (HIGH-EQ)</div>
+                <div style="font-size: 0.85cqw; color: #f8fafc; line-height: 1.35;">Adaptive state machine with Min-P (0.05) dynamic sampling, authentic personal listening, and zero corporate boilerplate.</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75cqw; color: var(--cyan); font-weight: 700; margin-bottom: 0.2cqw;">✓ 4-TIER ZERO-TRUST AST SANDBOX</div>
+                <div style="font-size: 0.85cqw; color: #f8fafc; line-height: 1.35;">Real-time AST parser traps destructive bash/python commands in &lt; 0.02 ms before process spawn; strict policy verification.</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75cqw; color: var(--emerald); font-weight: 700; margin-bottom: 0.2cqw;">✓ AUTONOMOUS REFLEXION LOOP</div>
+                <div style="font-size: 0.85cqw; color: #f8fafc; line-height: 1.35;">Subprocess stderr ingestion &amp; repair engine achieves a 40.0% recovery rate (+30% recovery delta over single-shot).</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75cqw; color: var(--cyan); font-weight: 700; margin-bottom: 0.2cqw;">✓ 1,436 MiB ZERO-COPY EDGE FOOTPRINT</div>
+                <div style="font-size: 0.85cqw; color: #f8fafc; line-height: 1.35;">Fused Q4_K_M weights leave &gt; 52% free VRAM on 4GB GTX 1650 and Metal Mac, delivering 38.4 tokens/s.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 8: BENCHMARK RIGOR -->
+      <section class="slide" data-slide="8">
         <div class="slide-top">
           <h2>Benchmark Verification</h2>
         </div>
@@ -698,8 +766,8 @@ html_content = r'''<!doctype html>
         </div>
       </section>
 
-      <!-- SLIDE 8: DEPLOYMENT & ARTIFACTS -->
-      <section class="slide" data-slide="8">
+      <!-- SLIDE 9: DEPLOYMENT & ARTIFACTS -->
+      <section class="slide" data-slide="9">
         <div class="slide-top">
           <h2>Deployment &amp; Model Access</h2>
         </div>
@@ -734,7 +802,7 @@ html_content = r'''<!doctype html>
 
       <!-- CONTROLS -->
       <footer class="controls-bar">
-        <span class="counter" id="slideCounter">01 / 08</span>
+        <span class="counter" id="slideCounter">01 / 09</span>
         <div style="display: flex; gap: 0.6cqw;">
           <button class="btn" id="notesBtn">Notes (P)</button>
           <button class="btn" id="overviewBtn">Overview (O)</button>
@@ -769,8 +837,9 @@ html_content = r'''<!doctype html>
       4: "Conventional fine-tuning tools dequantize to FP16 on disk, requiring 14.8 GB and crashing consumer drives. We built a custom C++17 OpenMP binary that fuses 144 LoRA tensors directly in-memory into 434 GGUF production tensors in 6.2 seconds with zero intermediate disk waste.",
       5: "This is Table 1 from the paper. Across eight iterative phases, we scaled from 70 to 448 samples. In Phase 8, cross-entropy training loss broke the 1.0 ceiling down to 0.9130, with compute scaling from 2.31x10^15 to 3.31x10^16 FLOPs.",
       6: "The loss convergence chart shows the plunge below 1.0, with held-out validation loss stable at 1.12. Next-token prediction accuracy climbed from 43.9% to 74.0% eval and 85.3% train, even with 100 new out-of-distribution algorithmic and kernel challenges in Phase 8.",
-      7: "Standardized benchmarks verify capability: 70% Pass@1 on HumanEval, a 40% repair recovery rate on HumanEval-Fix using compiler telemetry, a WikiText-2 perplexity of 10.67 confirming zero catastrophic forgetting, and 48 of 48 native unit tests passing in 1.38s.",
-      8: "The model is live and fully open-source. Anyone can run it via Ollama with one command, or access the weights on Hugging Face and GitHub. Thank you, and I welcome your questions."
+      7: "Why fine-tune rather than use the base model off the shelf? Base Qwen2.5-Coder is a passive code generator: it lacks emotional empathy, blindly emits destructive commands without safety checks, and has no self-healing loop. Aria transforms this foundation into an active, sovereign agent with 4-tier AST sandboxing, 40% compiler error recovery, and dual-brain high-EQ interaction.",
+      8: "Standardized benchmarks verify capability: 70% Pass@1 on HumanEval, a 40% repair recovery rate on HumanEval-Fix using compiler telemetry, a WikiText-2 perplexity of 10.67 confirming zero catastrophic forgetting, and 48 of 48 native unit tests passing in 1.38s.",
+      9: "The model is live and fully open-source. Anyone can run it via Ollama with one command, or access the weights on Hugging Face and GitHub. Thank you, and I welcome your questions."
     };
 
     (function() {
