@@ -140,6 +140,52 @@ class TracebackDistiller:
         )
 
 
+class ShellTracebackDistiller:
+    """
+    Distills raw multi-line Shell/Bash stderr streams and exit codes into localized error digests.
+    Extracts exit code, failing command, syntax flags, and permission/network errors.
+    """
+
+    @staticmethod
+    def distill(stderr: str, exit_code: int, command: Optional[str] = None) -> LocalizedTraceback:
+        clean_stderr = stderr.strip()
+        lines = [l.strip() for l in clean_stderr.splitlines() if l.strip()]
+        last_line = lines[-1] if lines else f"Process exited with code {exit_code}"
+
+        if exit_code == 124 or "timed out" in clean_stderr.lower():
+            return LocalizedTraceback(
+                error_type="CommandTimeout",
+                message=f"Command timed out ({exit_code}). Potential infinite loop or blocking I/O.",
+                raw_stderr=clean_stderr
+            )
+        if exit_code == 127 or "command not found" in clean_stderr.lower():
+            cmd_match = re.search(r"([^:\s]+):\s*(?:line\s*(\d+):)?\s*(.*?):\s*command not found", clean_stderr)
+            cmd_name = cmd_match.group(3) if cmd_match else (command or "command")
+            return LocalizedTraceback(
+                error_type="CommandNotFound",
+                failing_code=cmd_name,
+                message=f"Executable '{cmd_name}' not found in PATH.",
+                raw_stderr=clean_stderr
+            )
+        if "permission denied" in clean_stderr.lower():
+            return LocalizedTraceback(
+                error_type="PermissionDenied",
+                message=last_line,
+                raw_stderr=clean_stderr
+            )
+        if "syntax error" in clean_stderr.lower():
+            return LocalizedTraceback(
+                error_type="ShellSyntaxError",
+                message=last_line,
+                raw_stderr=clean_stderr
+            )
+        return LocalizedTraceback(
+            error_type="ShellExecutionError",
+            message=last_line,
+            raw_stderr=clean_stderr
+        )
+
+
 @dataclass
 class RepairAttempt:
     attempt: int
