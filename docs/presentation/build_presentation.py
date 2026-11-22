@@ -30,15 +30,15 @@ html_content = r'''<!doctype html>
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
       background: var(--bg);
       color: var(--ivory);
       font-family: var(--font-sans);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
       user-select: none;
     }
 
@@ -49,10 +49,16 @@ html_content = r'''<!doctype html>
       align-items: center;
       justify-content: center;
       background: radial-gradient(circle at 50% 15%, #083834 0%, #031210 80%);
+      padding: 1.5vh 1.5vw;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .stage {
-      width: min(100vw, 177.778vh);
+      width: 100%;
+      height: 100%;
+      max-width: calc((100vh - 3vh) * 16 / 9);
+      max-height: calc((100vw - 3vw) * 9 / 16);
       aspect-ratio: 16 / 9;
       position: relative;
       background: rgba(4, 20, 18, 0.98);
@@ -206,22 +212,32 @@ html_content = r'''<!doctype html>
     /* Speaker Notes Drawer */
     .speaker-drawer {
       position: absolute;
-      bottom: 3.2cqw;
+      bottom: 4.2cqw;
       left: 6cqw;
       right: 6cqw;
-      background: rgba(2, 12, 10, 0.98);
+      background: rgba(2, 14, 12, 0.97);
+      backdrop-filter: blur(12px);
       border: 1px solid var(--cyan);
-      border-radius: 6px 6px 0 0;
-      padding: 1.5cqw 2cqw;
-      z-index: 20;
-      transform: translateY(110%);
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(24, 226, 204, 0.15);
+      border-radius: 8px;
+      padding: 1.2cqw 1.8cqw;
+      z-index: 25;
       max-height: 40%;
       overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(16px);
+      transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
     }
 
-    .speaker-drawer.open { transform: translateY(0); }
-    .speaker-text { font-size: 1cqw; line-height: 1.6; color: #cbd5e1; }
+    .speaker-drawer.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .speaker-text { font-size: 0.95cqw; line-height: 1.6; color: #cbd5e1; }
 
     /* Overview Grid */
     .overview-modal {
@@ -814,6 +830,10 @@ html_content = r'''<!doctype html>
 
       <!-- NOTES DRAWER -->
       <div class="speaker-drawer" id="notesDrawer">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6cqw; border-bottom: 1px solid rgba(24, 226, 204, 0.15); padding-bottom: 0.4cqw;">
+          <span style="font-family: var(--font-mono); font-size: 0.75cqw; color: var(--cyan); letter-spacing: 0.05em; text-transform: uppercase;">Presenter Notes (Press P to toggle)</span>
+          <button id="closeNotesBtn" style="background: none; border: none; color: var(--dim); cursor: pointer; font-size: 1.1cqw; line-height: 1; padding: 0 0.3cqw;">✕</button>
+        </div>
         <div class="speaker-text" id="notesText"></div>
       </div>
 
@@ -878,11 +898,20 @@ html_content = r'''<!doctype html>
         nextBtn.disabled = cur === slides.length - 1;
         notesText.textContent = notes[cur + 1] || "";
         overviewGrid.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('current', i === cur));
+        if (history.replaceState) {
+          history.replaceState(null, '', '#' + (cur + 1));
+        }
       }
+
+      window.addEventListener('hashchange', () => {
+        const m = window.location.hash.match(/\d+/);
+        if (m) setSlide(parseInt(m[0], 10) - 1);
+      });
 
       prevBtn.addEventListener('click', () => setSlide(cur - 1));
       nextBtn.addEventListener('click', () => setSlide(cur + 1));
       notesBtn.addEventListener('click', () => notesDrawer.classList.toggle('open'));
+      document.getElementById('closeNotesBtn').addEventListener('click', () => notesDrawer.classList.remove('open'));
       overviewBtn.addEventListener('click', () => overviewModal.classList.toggle('active'));
       closeOverviewBtn.addEventListener('click', () => overviewModal.classList.remove('active'));
 
@@ -913,7 +942,9 @@ html_content = r'''<!doctype html>
         }
       });
 
-      setSlide(0);
+      const initMatch = window.location.hash.match(/\d+/);
+      const startSlide = initMatch ? parseInt(initMatch[0], 10) - 1 : 0;
+      setSlide(startSlide);
     })();
   </script>
 </body>
