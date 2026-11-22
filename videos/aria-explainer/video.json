@@ -1,0 +1,19 @@
+{
+  "title": "Aria: Sovereign Edge AI",
+  "theme": "midnight",
+  "size": "16:9",
+  "voice": "af_heart",
+  "music": true,
+  "captions": "auto",
+  "transition": "fade",
+  "defaults": "0.6",
+  "watermark": false,
+  "heard": {
+    "Aria": ["Area", "area", "AREA"],
+    "invariants": ["invariance"],
+    "four gigabytes": ["4GB of", "4GB", "4 GB"],
+    "gigabyte": ["GB", "gigabytes"],
+    "Aria proves": ["AREA-approved", "Area-approved", "AREA approved"],
+    "proves": ["approved"]
+  }
+}
