@@ -124,7 +124,12 @@ def execute_in_sandbox(code: str, test_code: str, timeout: float = 5.0) -> Dict[
     """
     Executes Python candidate solution + test assertions in an isolated subprocess.
     """
-    full_script = f"{code}\n\n{test_code}"
+    preamble = (
+        "from typing import *\n"
+        "import os, sys, math, time, json, re\n"
+        "from collections import defaultdict, deque, Counter\n\n"
+    )
+    full_script = f"{preamble}{code}\n\n{test_code}"
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
         f.write(full_script)
         temp_path = f.name
@@ -292,8 +297,10 @@ def run_grpo_self_evolution(
             print(f"   ⚠ Horizon Choke: 0/{group_size} passed. Engaging Reflexion Self-Repair Engine...")
             failed_cand = candidate_results[0]
             stderr_text = failed_cand.get("exec", {}).get("stderr", "")
-            distilled = TracebackDistiller.distill(stderr_text)
+            failed_code = failed_cand.get("parsed", {}).get("clean_code", "")
+            distilled = TracebackDistiller.distill(stderr_text, failed_code)
 
+            dist_summary = distilled.summary() if callable(getattr(distilled, "summary", None)) else str(distilled)
             repair_messages = [
                 {
                     "role": "system",
@@ -308,7 +315,7 @@ def run_grpo_self_evolution(
                     "content": (
                         f"Problem:\n{prompt_text}\n\n"
                         f"Failed Code:\n```python\n{failed_cand.get('parsed', {}).get('clean_code', '')}\n```\n\n"
-                        f"Execution Failure Diagnostic:\n{distilled.summary}\n\n"
+                        f"Execution Failure Diagnostic:\n{dist_summary}\n\n"
                         "Provide the corrected implementation."
                     )
                 }
@@ -320,7 +327,7 @@ def run_grpo_self_evolution(
                 repair_exec = execute_in_sandbox(repair_parsed["clean_code"], test_text)
                 if repair_exec["passed"]:
                     horizon_choke_repairs += 1
-                    scratchpad = repair_parsed["scratchpad"] or f"Reflexion diagnostic resolved: {distilled.summary}"
+                    scratchpad = repair_parsed["scratchpad"] or f"Reflexion diagnostic resolved: {dist_summary}"
                     clean_code = repair_parsed["clean_code"]
                     formatted_output = f"<thought>\n{scratchpad}\n</thought>\n\n```python\n{clean_code}\n```"
 
