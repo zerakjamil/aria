@@ -1,0 +1,23 @@
+base: /srv/storage/ai-companion/models/Qwen2.5-3B-Instruct
+task: sft
+
+data:
+  train: /srv/storage/ai-companion/training/data/combined_train_v10_rlvr.jsonl
+  format: alpaca
+  val_split: 0.1
+  max_length: 450
+
+training:
+  epochs: 3
+  lr: 2.0e-5
+  batch_size: 2
+  gradient_accumulation_steps: 1
+  stream_layers: true
+  stream_source: ram
+  lora:
+    r: 16
+    alpha: 32
+    target_modules: auto
+  quantization: 4bit
+
+output: /srv/storage/ai-companion/training/output
