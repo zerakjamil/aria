@@ -55,20 +55,23 @@ pytest tests/ -v
 
 | Metric / Benchmark | Result | Environment / Method |
 | :--- | :--- | :--- |
-| **Phase 9 Ultra-Hard Training Loss** | **0.6143** (All-time low, down from 2.5155) | 542 Ultra-Hard Pairs · 732 Steps · 3 Epochs |
-| **Phase 9 Peak Token Accuracy** | **91.71%** (Exceeding >90% target) | Step 720 / 732 · Ultra-Hard Evaluation Set |
-| **Phase 9 Validation Loss** | **1.2058** | 10% Independent Validation Split |
+| **Phase 10 GRPO & RLVR Loss** | **0.7004** (Final step 753 / 753) | 557 Fused Samples · 753 Steps · 3 Epochs |
+| **Phase 10 Mean Token Accuracy** | **84.67% – 85.12%** | Cosine Annealing Decay · RAM Layer Streaming |
 | **Edge Hardware Serving Envelope** | **1,436 MiB VRAM · 28.6–40.1 tok/s** | NVIDIA GTX 1650 Mobile (4,096 MiB physical capacity) |
-| **System Invariant & Test Suite** | **109 / 109 Passed (100%) in 3.19s** | 48 System Invariants + Counterfactual + Harness Tests |
-| **Programming Execution Sandbox** | **70.0% Pass@1 (14/20)** | HumanEval/0–19 Subprocess Exit Code Evaluation |
+| **System Invariant & Test Suite** | **109 / 109 Passed (100%) in 3.15s** | 48 Invariants + 10 Counterfactual + 8 Harness + RLVR |
+| **RLVR Verification Challenge Bank** | **40 Rigorous Challenges** | Algorithmic Invariants, Linux Systems, Counterfactuals |
+| **Group Relative Policy Optimization** | **$G=4, \hat{A}_i \in [-1.73, +1.73]$** | Contrastive Filtering ($\sigma_R > 0$) · $T=0.7$ Rollouts |
 | **Reflexion Execution-Guided Repair** | **55.0% Pass Rate · 40.0% Recovery** | +30.0% Absolute Gain over Single-Shot via Diagnostics |
-| **WikiText-2 Perplexity** | **10.6705 ± 0.58596** | Fused Q4_K_M GGUF Tensor Entropy Validation |
 | **Zero-Copy Adapter Fusion** | **6.2–7.8 seconds** | Custom C++17 OpenMP `llama-export-lora` Binary |
 
 ---
 
 ## Core Architecture
 
+- **On-Device GRPO & RLVR Engine (`grpo_self_evolution.py`):**
+  - **Verifiable Reward Formulation:** Evaluates candidate solutions in an isolated execution sandbox against ground-truth unit assertions, assigning graduated rewards: $R = R_{\text{exec}} + R_{\text{scratchpad}} + R_{\text{efficiency}} - R_{\text{timeout}}$.
+  - **Group Relative Advantage Normalization:** Groups of size $G=4$ are evaluated with normalized advantage $\hat{A}_i = \frac{r_i - \bar{r}}{\sigma_r + 10^{-4}}$, filtering strictly for contrastive groups ($\sigma_R > 0$) to reinforce high-advantage reasoning paths without a critic network.
+  - **Traceback-Distilled Self-Repair Recovery:** When a rollout candidate fails ($0/G$), `TracebackDistiller` extracts localized traceback frames and triggers bounded Reflexion self-repair to turn horizon failures into verified golden trajectories.
 - **Dual-Mode Behavioral Intent Routing:**
   - **Mode 1 (Empathetic Companion):** Emotional support, healthy rest validation, and startup founder reassurance with strictly bounded 3-sentence outputs and single-question conversational discipline.
   - **Mode 2 (Systems Engineer & Copilot):** Authoritative, zero-preamble code blocks, Linux command triage, and stack trace diagnosis with low-temperature deterministic sampling ($T=0.2$).
